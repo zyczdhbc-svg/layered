@@ -28,7 +28,7 @@ npm run dev        # → http://localhost:5176
 npm run build      # → dist/
 ```
 
-`dev` / `preview` 下 `/api/ai-proxy` 由 Vite 反代到 `https://ai-gateway-test.xtool.com`；线上由 Vercel `api/ai-proxy/[...path].js` 转发，浏览器始终同源请求，避免带 `Authorization` 时的 CORS。
+`dev` / `preview` 下 `/api/chat-completions` 由 Vite 反代到 `https://ai-gateway-test.xtool.com/v1/chat/completions`；线上由 Vercel `api/chat-completions.js` 转发，浏览器始终同源请求，避免带 `Authorization` 时的 CORS。
 
 ## Vercel 部署
 

@@ -5,10 +5,10 @@ import { defineConfig } from 'vite'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-const gatewayProxy = {
+const chatCompletionsProxy = {
   target: 'https://ai-gateway-test.xtool.com',
   changeOrigin: true,
-  rewrite: (p) => p.replace(/^\/api\/ai-proxy/, ''),
+  rewrite: () => '/v1/chat/completions',
 }
 
 export default defineConfig({
@@ -19,12 +19,12 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       // 与生产环境同源路径一致，由本地转发到网关（避免浏览器 CORS）
-      '/api/ai-proxy': gatewayProxy,
+      '/api/chat-completions': chatCompletionsProxy,
     },
   },
   preview: {
     proxy: {
-      '/api/ai-proxy': gatewayProxy,
+      '/api/chat-completions': chatCompletionsProxy,
     },
   },
   build: {
