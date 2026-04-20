@@ -1,0 +1,26 @@
+{
+  "name": "layered",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zyczdhbc-svg/layered.git"
+  },
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fal-ai/client": "^1.9.5",
+    "imagetracerjs": "^1.2.6",
+    "jszip": "^3.10.1",
+    "pinia": "^3.0.4",
+    "vue": "^3.5.29"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.4",
+    "vite": "^7.3.1"
+  }
+}
