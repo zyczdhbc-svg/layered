@@ -5,6 +5,12 @@ import { defineConfig } from 'vite'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
+const gatewayProxy = {
+  target: 'https://ai-gateway-test.xtool.com',
+  changeOrigin: true,
+  rewrite: (p) => p.replace(/^\/api\/ai-proxy/, ''),
+}
+
 export default defineConfig({
   plugins: [vue()],
   base: './',
@@ -12,13 +18,13 @@ export default defineConfig({
     port: 5176,
     strictPort: true,
     proxy: {
-      // /ai-proxy/* → https://ai-gateway-test.xtool.com/*
-      // 绕过 CORS：请求走本地 Vite 转发，不触发浏览器 preflight
-      '/ai-proxy': {
-        target: 'https://ai-gateway-test.xtool.com',
-        changeOrigin: true,
-        rewrite: (p) => p.replace(/^\/ai-proxy/, ''),
-      },
+      // 与生产环境同源路径一致，由本地转发到网关（避免浏览器 CORS）
+      '/api/ai-proxy': gatewayProxy,
+    },
+  },
+  preview: {
+    proxy: {
+      '/api/ai-proxy': gatewayProxy,
     },
   },
   build: {

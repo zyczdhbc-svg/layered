@@ -3,9 +3,8 @@ import ImageTracer from 'imagetracerjs'
 import blackFrameUrl from '../assets/black-frame.png'
 
 const TOKEN = 'sk-PmU5veh6hRe7ku2Pn5WdGnLWzc0PcIbhdXDibf0ONeLFxgCh'
-const BASE = import.meta.env.DEV
-  ? '/ai-proxy'
-  : 'https://ai-gateway-test.xtool.com'
+/** 同源路径：dev 由 Vite 反代，生产由 Vercel /api/ai-proxy/* 反代，避免跨域带 Authorization */
+const BASE = '/api/ai-proxy'
 const FAL_KEY = import.meta.env.VITE_FAL_KEY
 
 const TEXT_MODEL_CANDIDATES = [
