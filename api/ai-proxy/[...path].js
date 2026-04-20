@@ -3,7 +3,7 @@
  * Browser calls /api/ai-proxy/v1/... so Authorization is not blocked by CORS.
  */
 export const config = {
-  /** Hobby 套餐最高 60s；更长请求需 Pro（见 Vercel Functions duration） */
+  // Hobby 套餐最高 60s；更长请求需 Pro（见 Vercel Functions duration）
   maxDuration: 60,
 }
 
