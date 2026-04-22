@@ -36,8 +36,6 @@ export default defineConfig(({ command }) => ({
     rollupOptions: {
       input: {
         index: path.resolve(__dirname, 'index.html'),
-        app: path.resolve(__dirname, 'app.html'),
-        embed: path.resolve(__dirname, 'embed.html'),
       },
       output: {
         entryFileNames: 'assets/index.[hash].js',

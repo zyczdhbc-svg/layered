@@ -13,12 +13,9 @@
     "esbuild": "0.25.5"
   },
   "scripts": {
-    "predev": "node scripts/sync-config.js",
     "dev": "vite",
-    "prebuild": "node scripts/sync-config.js",
     "build": "vite build",
-    "preview": "vite preview",
-    "deploy": "node scripts/deploy.js"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@atomm-developer/generator-sdk": "^1.0.15",
