@@ -7,12 +7,22 @@
   },
   "version": "1.0.0",
   "type": "module",
+  "overrides": {
+    "@makeblock/passport-client": "1.5.9",
+    "@makeblock/upload": "npm:empty-npm-package@1.0.0",
+    "esbuild": "0.25.5"
+  },
   "scripts": {
+    "predev": "node scripts/sync-config.js",
     "dev": "vite",
+    "prebuild": "node scripts/sync-config.js",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "node scripts/deploy.js"
   },
   "dependencies": {
+    "@atomm-developer/generator-sdk": "^1.0.15",
+    "@atomm-developer/generator-workbench": "0.1.39",
     "@fal-ai/client": "^1.9.5",
     "imagetracerjs": "^1.2.6",
     "jszip": "^3.10.1",

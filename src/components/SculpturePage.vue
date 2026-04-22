@@ -7,7 +7,7 @@
         v-if="leftCollapsed"
         type="button"
         class="left-rail"
-        title="展开 AI Create"
+        title="Expand AI Create"
         @click="leftCollapsed = false"
       >
         <span class="left-rail-icon">
@@ -32,7 +32,7 @@
           <button
             type="button"
             class="panel-collapse-btn"
-            title="收起"
+            title="Collapse"
             @click="leftCollapsed = true"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
@@ -47,7 +47,7 @@
             v-model="store.userInput"
             class="ai-prompt"
             rows="8"
-            :placeholder="store.isBusy ? '生成中，请稍候…' : '例如：一只小鹿和两只小狗在森林里奔跑，夕阳下的山谷，远处有小木屋'"
+            :placeholder="store.isBusy ? 'Generating, please wait…' : 'e.g. A little deer and two puppies running in the forest, a valley at sunset, a cabin in the distance'"
             :disabled="store.isBusy"
             maxlength="500"
           />
@@ -131,8 +131,8 @@
             class="chrome-btn"
             :disabled="!store.hasAnyImage"
             @click.stop="resetView"
-            title="复位视角"
-          >复位</button>
+            title="Reset view"
+          >Reset</button>
         </div>
 
         <div class="stage-perspective" :style="stageStyle">
@@ -163,8 +163,8 @@
 
         <div v-if="!showStack && !store.isBusy" class="stage-empty">
           <div class="se-icon">⧉</div>
-          <div class="se-title">5 层叠雕预览</div>
-          <div class="se-sub">在左侧输入描述后，点击生成</div>
+          <div class="se-title">5-layer sculpture preview</div>
+          <div class="se-sub">Enter a description on the left, then click Generate</div>
         </div>
 
         <div v-if="store.isBusy" class="stage-loading">
@@ -173,9 +173,9 @@
         </div>
 
         <div v-if="showStack" class="stage-hint">
-          <span>🖱 拖拽旋转</span>
-          <span>· 滚轮缩放层距</span>
-          <span>· 双击复位</span>
+          <span>🖱 Drag to rotate</span>
+          <span>· Scroll to zoom spacing</span>
+          <span>· Double-click to reset</span>
         </div>
       </div>
     </main>
@@ -223,9 +223,8 @@
             <polyline points="7 10 12 15 17 10"/>
             <line x1="12" y1="15" x2="12" y2="3"/>
           </svg>
-          <span>{{ isExporting ? '导出中…' : '导出 UV × 5' }}</span>
+          <span>{{ isExporting ? 'Exporting…' : 'Export' }}</span>
         </button>
-        <div class="export-hint">每层独立矢量化 · 位图 + 激光切割一体 SVG</div>
       </div>
     </aside>
   </div>
@@ -237,6 +236,7 @@ import JSZip from 'jszip'
 import { useSculptureStore } from '../stores/sculptureStore.js'
 import {
   buildUvCutSvg,
+  buildFrameOnlySvg,
   getCanvasSize,
   SUPPORTED_ASPECT_RATIOS,
 } from '../composables/useSculpture.js'
@@ -354,7 +354,7 @@ function onRatioClick(r) {
   ratioOpen.value = false
   if (r === store.aspectRatio) return
   if (store.hasAnyImage) {
-    if (!window.confirm(`切换到 ${r} 会清空已生成的图层，确定吗？`)) return
+    if (!window.confirm(`Switching to ${r} will clear the generated layers. Continue?`)) return
   }
   store.setAspectRatio(r)
 }
@@ -409,12 +409,12 @@ async function onGenerate() {
   try {
     await store.runFullPipeline()
     if (store.phase === 'done' && store.errorCount === 0) {
-      emit('toast', '叠雕生成完成')
+      emit('toast', 'Sculpture generation complete')
     } else if (store.errorCount > 0) {
-      emit('toast', `完成，失败 ${store.errorCount} 个`, 'error')
+      emit('toast', `Done with ${store.errorCount} error(s)`, 'error')
     }
   } catch (e) {
-    emit('toast', e.message || '生成失败', 'error')
+    emit('toast', e.message || 'Generation failed', 'error')
   }
 }
 
@@ -422,13 +422,13 @@ const canExport = computed(() => store.layers.every(l => !!l.imageDataUrl))
 
 async function onExportUv5() {
   if (!canExport.value) {
-    emit('toast', '还没有可导出的位图', 'error')
+    emit('toast', 'No bitmap available to export yet', 'error')
     return
   }
   isExporting.value = true
   try {
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')
-    emit('toast', '正在为 5 层逐张抽切割线…')
+    emit('toast', 'Extracting cut lines for each of the 5 layers…')
     // Bundle every generated SVG into a single ZIP archive so the user gets
     // one download instead of fighting 5 consecutive pop-ups (which most
     // browsers throttle/block after the 2nd–3rd file).
@@ -438,6 +438,11 @@ async function onExportUv5() {
       const ordinal = LAYER_ORDINAL[layer.id - 1] || `layer-${layer.id}`
       zip.file(`${ordinal}-layer.svg`, svg)
     }
+    // Extra: the empty outer picture frame as its own vector file, so the
+    // frame itself can be UV-printed and laser-cut independently of any
+    // generated content layer.
+    const frameSvg = buildFrameOnlySvg({ aspectRatio: store.aspectRatio })
+    zip.file('Picture frame outer frame.svg', frameSvg)
     const blob = await zip.generateAsync({ type: 'blob' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -447,9 +452,9 @@ async function onExportUv5() {
     a.click()
     a.remove()
     URL.revokeObjectURL(url)
-    emit('toast', '已打包下载 5 层 SVG（UV 喷印 + 激光切割）')
+    emit('toast', 'Downloaded 5-layer SVG bundle (UV print + laser cut)')
   } catch (e) {
-    emit('toast', e.message || '导出失败', 'error')
+    emit('toast', e.message || 'Export failed', 'error')
   } finally {
     isExporting.value = false
   }
@@ -756,7 +761,7 @@ async function onExportUv5() {
 /* ────────── MIDDLE: Stage ────────── */
 .col.middle {
   position: relative;
-  padding: 16px;
+  padding: 0;
   overflow: hidden;
 }
 
@@ -927,8 +932,8 @@ async function onExportUv5() {
   background:
     radial-gradient(60% 40% at 50% 45%, rgba(255, 255, 255, .5), transparent 70%),
     linear-gradient(180deg, #ffffff 0%, #eff2f7 60%, #e7ebf1 100%);
-  border: 1px solid var(--border);
-  border-radius: 16px;
+  border: none;
+  border-radius: 0;
   display: flex; align-items: center; justify-content: center;
   perspective: 1800px;
   overflow: hidden;
@@ -1110,10 +1115,5 @@ async function onExportUv5() {
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(6px);
   display: flex; flex-direction: column; gap: 6px;
-}
-.export-hint {
-  font-size: 10px; color: var(--text-muted);
-  text-align: center;
-  line-height: 1.4;
 }
 </style>

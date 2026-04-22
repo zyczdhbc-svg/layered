@@ -26,7 +26,7 @@ export const useSculptureStore = defineStore('sculpture', () => {
   // auto-rebuilds on aspect-ratio change and never goes stale through HMR.
   const displayFrameDataUrl = computed(() => buildDisplayFrameDataUrl(aspectRatio.value))
   const phase = ref('idle') // idle | refining | generating | vectorizing | done | error
-  const statusText = ref('输入文字，一键生成 5 层叠雕')
+  const statusText = ref('Enter text to generate a 5-layer sculpture')
 
   // Per-layer default thickness (px in 3D scene). Each layer represents a
   // physical slab; the Z-stack position of layer i is the sum of thicknesses
@@ -84,7 +84,7 @@ export const useSculptureStore = defineStore('sculpture', () => {
       l.status = l.prompt ? 'pending' : 'pending'
       l.error = ''
     })
-    statusText.value = `画幅已切换为 ${next}，请重新生成`
+    statusText.value = `Aspect ratio switched to ${next}. Please regenerate.`
   }
 
   function resetLayers() {
@@ -113,14 +113,14 @@ export const useSculptureStore = defineStore('sculpture', () => {
 
   async function refinePrompt() {
     if (!userInput.value.trim()) {
-      statusText.value = '请先输入提示词'
+      statusText.value = 'Please enter a prompt first'
       return
     }
     if (isBusy.value) return
     resetLayers()
     refinedRaw.value = ''
     phase.value = 'refining'
-    statusText.value = '大模型润色中…'
+    statusText.value = 'Refining prompt with LLM…'
     try {
       const { raw, layers: parsed } = await refineSculpturePrompt(userInput.value.trim())
       refinedRaw.value = raw
@@ -129,10 +129,10 @@ export const useSculptureStore = defineStore('sculpture', () => {
         if (L) L.prompt = p.prompt
       })
       phase.value = 'idle'
-      statusText.value = `润色完成，已生成 ${parsed.length} 个图层提示词`
+      statusText.value = `Prompt refined: ${parsed.length} layer prompts ready`
     } catch (e) {
       phase.value = 'error'
-      statusText.value = e.message || '润色失败'
+      statusText.value = e.message || 'Prompt refinement failed'
       throw e
     }
   }
@@ -149,14 +149,14 @@ export const useSculptureStore = defineStore('sculpture', () => {
       })
       layer.rawImageUrl = url
       layer.status = 'vectorizing'
-      layer.imageDataUrl = await composeWithFixedFrame(url, frameDataUrl.value, { layerId: layer.id })
+      layer.imageDataUrl = await composeWithFixedFrame(url, frameDataUrl.value, { layerId: layer.id, aspectRatio: aspectRatio.value })
       // L5 is print-only — no laser-cut silhouette, so skip vectorization.
       if (layer.id === 5) {
         layer.svg = ''
         layer.svgDataUrl = ''
         layer.color = ''
       } else {
-        const { svg, color } = await vectorizeImage(layer.imageDataUrl)
+        const { svg, color } = await vectorizeImage(layer.imageDataUrl, { aspectRatio: aspectRatio.value })
         layer.svg = svg
         layer.svgDataUrl = svgToDataUrl(svg)
         layer.color = color
@@ -164,13 +164,13 @@ export const useSculptureStore = defineStore('sculpture', () => {
       layer.status = 'done'
     } catch (e) {
       layer.status = 'error'
-      layer.error = e.message || '生成失败'
+      layer.error = e.message || 'Generation failed'
     }
   }
 
   async function generateAll({ onlyPending = false } = {}) {
     if (!hasRefined.value) {
-      statusText.value = '请先完成润色'
+      statusText.value = 'Refine the prompt first'
       return
     }
     if (isBusy.value) return
@@ -186,7 +186,7 @@ export const useSculptureStore = defineStore('sculpture', () => {
       l.rawImageUrl = ''; l.imageDataUrl = ''; l.svg = ''; l.svgDataUrl = ''
       l.color = ''
     })
-    statusText.value = `并行生成 ${pending.length} 个图层…`
+    statusText.value = `Generating ${pending.length} layer(s) in parallel…`
 
     let cursor = 0
     const concurrency = Math.max(1, Math.min(MAX_PARALLEL_GENERATION, pending.length))
@@ -205,7 +205,7 @@ export const useSculptureStore = defineStore('sculpture', () => {
     await Promise.all(Array.from({ length: concurrency }, () => worker()))
 
     phase.value = 'done'
-    statusText.value = `生成完成：成功 ${doneCount.value}，失败 ${errorCount.value}`
+    statusText.value = `Done: ${doneCount.value} ok, ${errorCount.value} failed`
   }
 
   async function runFullPipeline() {
@@ -220,11 +220,11 @@ export const useSculptureStore = defineStore('sculpture', () => {
     const layer = layers.value.find(l => l.id === id)
     if (!layer || !layer.prompt) return
     phase.value = 'generating'
-    statusText.value = `重新生成 Layer ${id}…`
+    statusText.value = `Regenerating Layer ${id}…`
     layer.imageDataUrl = ''; layer.svg = ''; layer.svgDataUrl = ''
     await generateOneLayer(id)
     phase.value = allDone.value ? 'done' : 'idle'
-    statusText.value = layer.status === 'done' ? `Layer ${id} 已重新生成` : `Layer ${id} 失败：${layer.error}`
+    statusText.value = layer.status === 'done' ? `Layer ${id} regenerated` : `Layer ${id} failed: ${layer.error}`
   }
 
   function updateLayerPrompt(id, newPrompt) {

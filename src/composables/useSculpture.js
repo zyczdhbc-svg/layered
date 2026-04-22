@@ -21,7 +21,11 @@ if (FAL_KEY) {
 }
 
 export const SCULPTURE_SYSTEM = `You are a UV-print + laser-cut layered-sculpture prompt refiner.
-The 5-layer composition sits inside a fixed panel (square 1:1, 16:9, or 4:3) with a THICK solid black rectangular outer frame (about 3.5% of the shorter side, full-bleed to the canvas edge). The reference image passed to the downstream image model shows exactly this frame plus a pure-magenta #FF00FF interior that fills every pixel inside the frame edge-to-edge (no white gap, no margin). The outer frame is a structural constant — your prompts describe only the content that lives INSIDE the inner area, and you must insist that content reaches the inner edge of the black frame on all four sides with NO white / off-white / light-gray margin in between. Treat the inner edge of the thick black frame as a physical wall the content is glued to.
+The 5-layer composition sits inside a fixed panel (square 1:1, 16:9, or 4:3). The reference image passed to the downstream image model is organised as THREE concentric zones from outside to inside:
+  (a) an OUTER MAGENTA MARGIN BAND of pure #FF00FF, roughly 3% of the shorter side wide, running along every canvas edge;
+  (b) a THICK solid BLACK rectangular picture frame inset inside that margin (thickness ≈ 3.5% of the shorter side for 1:1 panels, ≈ 5.5% for 16:9 / 4:3) — a heavy, visible, rectangular band, NOT a hairline;
+  (c) an INTERIOR drawable area inside the black frame, flood-filled with the same pure magenta #FF00FF.
+The OUTER MARGIN BAND and the BLACK FRAME are fixed structural constants — the AI must preserve both EXACTLY as in the reference and MUST NOT paint any content on top of either. The AI's drawable area is STRICTLY the inner rectangle inside the black frame. Within that interior, silhouette content must reach the INNER EDGE of the black frame on the sides where a rule calls for edge attachment — with NO white / off-white / light-gray gap between the silhouette and the inner frame edge. Treat the inner edge of the black frame as a physical wall the silhouette is glued to, and treat the black frame AND the outer magenta margin as walls the silhouette must never cross or paint on top of.
 
 OUTPUT FORMAT (Layers 1–4 — the "cut" layers):
 - Each layer has a clearly defined SILHOUETTE SHAPE — this is the material that stays after laser cutting.
@@ -32,7 +36,7 @@ OUTPUT FORMAT (Layers 1–4 — the "cut" layers):
 
 OUTPUT FORMAT (Layer 5 — the "print-only" background):
 - Layer 5 is the BACKMOST layer and is ONLY for UV printing — there is NO laser-cut silhouette on L5.
-- The ENTIRE canvas (inside the outer black frame) is filled with the sky / horizon scene. NO magenta chroma-key on L5 — every pixel is meaningful printed content.
+- The ENTIRE canvas INSIDE the black frame is filled with the sky / horizon scene — every interior pixel is meaningful printed content, no magenta chroma-key left inside the frame. Outside the black frame, the outer magenta margin band stays as it is in the reference; post-processing will chroma-key that margin to transparent so only the frame + interior sky end up on the physical plank.
 - Sky coloring is a SMOOTH vertical gradient OR at most 2 very softly blended color zones — NOT hard horizontal stripes, NOT 3+ stacked color bands. The sun / moon disc sits HIGH in the sky (bottom edge ≥ 35% from top) so L4's mountain peaks never cover it. A low thin horizon strip sits at the bottom. The whole layer should read as ONE continuous sky, not as stacked strips.
 
 VIEWER PERSPECTIVE (read this first, it changes how you compose every layer):
@@ -63,14 +67,15 @@ HARD OCCUPANCY BUDGETS (expressed as PERCENTAGES of the canvas width/height so t
 - Layer 2 : silhouette ONLY in three regions — LEFT PILLAR (leftmost 19% of width, FUSED to the left inner frame edge — no magenta gap between the pillar and the left frame), RIGHT PILLAR (rightmost 19% of width, FUSED to the right inner frame edge), and a BOTTOM STRIP (lowest 8% of height) that connects the two pillars along the bottom inner edge. The entire central rectangle (middle 62% of width AND top 92% of height) MUST be 100% pure magenta #FF00FF. Pillars taper narrower toward the top and must NEVER extend branches, leaves, vines, or any other element past the 19% width line into the central 62%.
 - Layer 3 : ground strip confined to the BOTTOM 24% of the canvas (full width, height 24%). Hero sits on top of the ground, horizontally centered. HERO SIZE IS SMALL — hero horizontal width ≤ 38% of canvas width AND hero vertical height ≤ 32% of canvas height. Hero TOP edge must sit AT LEAST 44% from the top of the canvas (so the top 44% of the canvas stays 100% pure magenta above the hero), with hero feet at ~76% from top sitting on the ground strip. Everywhere outside the ground strip AND outside the small hero silhouette is pure magenta #FF00FF. DO NOT draw a close-up / portrait / large character filling the frame — the hero must read as a small figurine inside a wider landscape.
 - Layer 4 : TALLEST CUT LAYER. Silhouette confined to the BOTTOM 55% of the canvas (top 45% is pure magenta so the sun / moon on L5 is never blocked). Top edge is a mid-distance landscape profile — rolling hills + mountains + optional small houses — with 2–4 gentle peaks placed OFF-CENTER (e.g. one around x=20–35%, another around x=65–80%). At the HORIZONTAL CENTER of the canvas there is a deliberate VALLEY / DIP — the skyline at the center drops to at least 55% from the top, forming a clear open window through which L5's sun / moon disc can shine. No peak may exceed the 45% line from the top. The silhouette touches the left, right, and bottom inner edges. Full width, smooth continuous shape with plenty of magenta above.
-- Layer 5 : the ENTIRE canvas is real sky content (no magenta chroma-key, no cut silhouette). Sky fills from the top down to a low horizon (bottom 18–22% of height). Sun / moon disc sits HIGH in the sky — disc BOTTOM edge no lower than 35% from the top of the canvas (clearly above where L4's mountain peaks end at ~45%) — horizontally centered, diameter about 20–28% of the canvas short side. Sky coloring is a SMOOTH SOFT gradient or 2 very gently blended color zones, NOT hard horizontal stripes. Small clouds / stars / birds only in the top half.
+- Layer 5 : the ENTIRE interior of the black frame is real sky content (no magenta inside the frame, no cut silhouette). Sky fills from the top down to a low horizon (bottom 18–22% of height). Sun / moon disc sits HIGH in the sky — disc BOTTOM edge no lower than 35% from the top of the canvas (clearly above where L4's mountain peaks end at ~45%) — horizontally centered, diameter about 20–28% of the canvas short side. Sky coloring is a SMOOTH SOFT gradient or 2 very gently blended color zones, NOT hard horizontal stripes. Small clouds / stars / birds only in the top half. The BLACK FRAME RING and the OUTER MAGENTA MARGIN BAND are preserved as-is; post-processing chroma-keys the margin away later.
 
 GLOBAL RULES (apply to all 5 layers):
+- DRAWABLE AREA = INSIDE THE BLACK FRAME ONLY. Every refined prompt must make it clear that the AI's silhouette / sky content lives EXCLUSIVELY inside the inner rectangle of the black picture frame. The black frame itself AND the outer magenta margin band that sits between the frame and the canvas edge are FIXED structural zones — the AI preserves them untouched. Silhouettes never paint on top of the black frame and never extend into the outer magenta margin band.
 - Every layer is still fundamentally a SILHOUETTE (a cut-out shape). The only change vs a classic papercut is that the inside of the shape is FILLED WITH ILLUSTRATION COLORS instead of solid black. The shape / outline rules below are identical to classic papercut rules.
 - NO FLOATING ELEMENTS. Any subject that would otherwise float (animals, characters, lanterns, signs, leaves, small objects) MUST sit on or connect to another shape (a ground strip, a tree, a building, another silhouette) that reaches from the left inner edge to the right inner edge of the outer frame, OR connect directly to the outer frame / to other silhouettes connected to it. Always specify the supporting base explicitly in the prompt.
 - When a layer rule calls for a horizon, ground strip, or base, that strip MUST span the full inner width — no magenta gaps at the left or right side.
-- EDGE ATTACHMENT. Wherever a rule says a silhouette "touches" or is "fused to" an inner frame edge (e.g. L2 pillars to the left/right edges, L1/L3/L4 ground/horizon to the bottom and side edges), the colored content must extend ALL THE WAY to that edge with NO magenta gap in between. The black outer frame will be stamped on top; the colored content must sit directly against it, no margin.
-- BOTTOM MUST BE FLOODED. For EVERY layer whose silhouette reaches the lower half of the canvas (ground, horizon, base, hills, road, stones, characters with legs, etc.), the silhouette shape must extend DOWN to the bottom inner edge of the outer frame as ONE continuous connected shape — touching the bottom inner edge continuously from left inner edge to right inner edge. There must be NO magenta gap between any silhouette element and the bottom of the frame.
+- EDGE ATTACHMENT. Wherever a rule says a silhouette "touches" or is "fused to" an inner frame edge (e.g. L2 pillars to the left/right edges, L1/L3/L4 ground/horizon to the bottom and side edges), "inner frame edge" always means the INNER edge of the black picture frame — NOT the canvas edge. The colored content must extend ALL THE WAY to that inner edge with NO magenta gap in between, but must NEVER cross it (never paint on top of the black frame) and must NEVER extend into the outer magenta margin band that sits between the black frame and the canvas edge.
+- BOTTOM MUST BE FLOODED. For EVERY layer whose silhouette reaches the lower half of the canvas (ground, horizon, base, hills, road, stones, characters with legs, etc.), the silhouette shape must extend DOWN to the BOTTOM INNER EDGE OF THE BLACK FRAME as ONE continuous connected shape — touching that bottom inner edge continuously from left inner edge to right inner edge. There must be NO magenta gap between any silhouette element and the bottom inner edge of the frame. But the silhouette must STOP at that inner edge — it never paints on top of the black frame and never reaches through the frame into the outer magenta margin band along the canvas bottom.
 - FLAT-COLOR FRIENDLY. Keep color usage simple and suitable for UV flatbed printing: a small number of saturated solid-color areas, simple flat shading allowed but no photorealism, no complex textures. Think "Pixar flat illustration" or "children-book cutout".
 - Do NOT describe the outer frame itself (it is fixed and applied automatically). Do NOT ask for any additional inner border, decorative frame, text, watermark, grid, or arrows.
 - For Layers 1–4 the background color is PURE MAGENTA #FF00FF (chroma-key), NOT white. Always spell it out. For Layer 5 there is NO background color — the full canvas is real sky content.
@@ -85,7 +90,7 @@ Interior color palette: warm earthy tones — moss green grass, brown earth, gre
 
 Layer 2 — Foreground (Sides) — SIDE PILLARS FUSED TO THE FRAME, center must be magenta
 Subject: tall trees, vertical columns, bamboo stalks, street lamps, tall plants. ONLY side content — nothing may sit in the middle.
-Composition: Two narrow vertical pillars — LEFT pillar occupies ONLY the leftmost 19% of canvas width, with its LEFT SIDE FUSED to the left inner frame edge (the colored trunk / foliage extends all the way to the left edge of the canvas, no magenta gap between the pillar and the frame). RIGHT pillar occupies ONLY the rightmost 19% of width, with its RIGHT SIDE FUSED to the right inner frame edge. The pillars are NOT floating inside the canvas — they are physically attached to the left and right inner frame edges, exactly like curtains hanging from the sides of a theatre stage. Plus one thin bottom strip (lowest 8% of canvas height) connecting the two pillars along the bottom inner edge. The huge central rectangle (middle 62% of width AND the top 92% of height) is 100% PURE MAGENTA #FF00FF — NO branch, NO leaf, NO hanging ornament may enter it. Pillars taper narrower toward the top. Pillars can reach almost to the top of the inner frame.
+Composition: Two narrow vertical pillars — LEFT pillar occupies ONLY the leftmost 19% of canvas width, with its LEFT SIDE FUSED to the LEFT INNER EDGE of the black frame (the colored trunk / foliage extends all the way to that inner frame edge with NO magenta gap between the pillar and the frame, but does NOT paint on top of the black frame and does NOT extend into the outer magenta margin band outside the frame). RIGHT pillar occupies ONLY the rightmost 19% of width, with its RIGHT SIDE IDENTICALLY FUSED to the RIGHT INNER EDGE of the black frame. The pillars are NOT floating inside the drawable area — they are physically attached to the inner frame edges, exactly like curtains hanging from the sides of a theatre stage. Plus one thin bottom strip (lowest 8% of canvas height) connecting the two pillars along the bottom inner frame edge. The huge central rectangle (middle 62% of width AND the top 92% of height) is 100% PURE MAGENTA #FF00FF — NO branch, NO leaf, NO hanging ornament may enter it. Pillars taper narrower toward the top. Pillars can reach almost to the top inner edge of the frame, but never cross it.
 Interior color palette: dark tree-bark brown trunks, dense green foliage, small colorful leaves / flowers accents. No magenta, no hot pink inside the pillars.
 
 Layer 3 — Main Subject — the HERO, a SMALL figurine on the middle stage
@@ -103,7 +108,7 @@ Interior color palette: cool distance colors mixed with warm building accents �
 
 Layer 5 — Background — full sky, PRINT-ONLY (no cut silhouette, NO magenta anywhere), soft smooth sky
 Subject: full sky scene — a large sun or moon PLUS a low thin horizon band. Optional small clouds, stars, or birds in the upper half only.
-Composition: The entire canvas inside the outer black frame is filled with sky / horizon content — EVERY pixel is meaningful printed content. A large sun / moon disc sits HIGH in the sky (disc BOTTOM edge no lower than 35% from the top of the canvas — clearly above where L4's peaks end at ~45%), horizontally centered, diameter about 20–28% of the canvas short side. A thin horizon silhouette fills ONLY the BOTTOM 18–22% of the canvas across the full width. L5 is PRINT-ONLY, no cut silhouette.
+Composition: The entire INTERIOR of the black frame is filled with sky / horizon content — every interior pixel is meaningful printed content, no magenta remains inside the frame. A large sun / moon disc sits HIGH in the sky (disc BOTTOM edge no lower than 35% from the top of the canvas — clearly above where L4's peaks end at ~45%), horizontally centered, diameter about 20–28% of the canvas short side. A thin horizon silhouette fills ONLY the BOTTOM 18–22% of the canvas across the full width. L5 is PRINT-ONLY, no cut silhouette. The BLACK FRAME RING and the OUTER MAGENTA MARGIN BAND are preserved exactly as in the reference; post-processing chroma-keys the margin to transparent so the physical plank shows only the frame + interior sky.
 Sky coloring (IMPORTANT — avoid the "zebra-stripe" look): use a SMOOTH vertical gradient OR at most 2 very softly blended color zones with feathered / blurred transitions. DO NOT paint hard horizontal color stripes. DO NOT split the sky into 3 or 4 obvious bands. The sun's own soft glow / halo may also blend into the surrounding sky. The result should read as a single continuous dusk / dawn / night sky, not as multiple stacked strips.
 Interior color palette: warm sunset (mostly orange-pink near the horizon blending gently upward into a single soft purple / deep blue top) OR night (deep navy top blending gently into dusty purple at the horizon) with a golden / silver disc. Absolutely no #FF00FF magenta on L5.
 
@@ -116,11 +121,11 @@ Layer 4: <refined prompt>
 Layer 5: <refined prompt>`
 
 export const LAYER_META = [
-  { id: 1, label: 'Foreground (Bottom)', zh: '前景 · 底部' },
-  { id: 2, label: 'Foreground (Sides)', zh: '前景 · 两侧' },
-  { id: 3, label: 'Main Subject',       zh: '主体' },
-  { id: 4, label: 'Midground',          zh: '中景' },
-  { id: 5, label: 'Background',         zh: '背景' },
+  { id: 1, label: 'Foreground (Bottom)', zh: '' },
+  { id: 2, label: 'Foreground (Sides)',  zh: '' },
+  { id: 3, label: 'Main Subject',        zh: '' },
+  { id: 4, label: 'Midground',           zh: '' },
+  { id: 5, label: 'Background',          zh: '' },
 ]
 
 /**
@@ -140,7 +145,7 @@ const LAYER_OCCUPANCY_BUDGETS = {
   ].join('\n'),
   2: [
     '- The silhouette is allowed ONLY in three regions: LEFT PILLAR (leftmost 19% of canvas width), RIGHT PILLAR (rightmost 19% of width), and a thin BOTTOM STRIP (lowest 8% of canvas height) connecting the two pillars.',
-    '- PILLAR-TO-EDGE FUSION (CRITICAL): the LEFT pillar\'s LEFT side is FUSED to the left inner frame edge — the colored trunk / foliage extends all the way to the canvas\'s left edge with NO magenta gap between the pillar and the frame. The RIGHT pillar\'s RIGHT side is identically FUSED to the right inner frame edge. The two pillars do NOT float inside the canvas with magenta space around them — they are attached to the frame like curtains hanging from the sides of a theatre stage.',
+    '- PILLAR-TO-EDGE FUSION (CRITICAL): the LEFT pillar\'s LEFT side is FUSED to the LEFT INNER EDGE of the black frame — the colored trunk / foliage extends all the way to that inner frame edge with NO magenta gap between the pillar and the frame, but does NOT paint on top of the black frame and does NOT extend into the outer magenta margin band outside the frame. The RIGHT pillar\'s RIGHT side is identically FUSED to the RIGHT INNER EDGE of the black frame. The two pillars do NOT float inside the drawable area with magenta space around them — they are attached to the inner frame edges like curtains hanging from the sides of a theatre stage.',
     '- The entire central rectangle (middle 62% of width AND top 92% of height) must be FLOOD-FILLED with pure magenta #FF00FF chroma-key. NO branch, NO leaf, NO tree top, NO hanging object may enter this central area — it is a mask region, not content.',
     '- Pillars taper slightly narrower toward the top; they can reach almost to the top of the inner frame but NEVER spread toward the middle.',
     '- Interior colors: dark trunks, deep greens, small warm accents. DO NOT use any magenta or hot-pink inside the pillars.',
@@ -166,13 +171,14 @@ const LAYER_OCCUPANCY_BUDGETS = {
     '- Interior colors: cool blue-grey mountains, deep forest green hills, plus optional warm terracotta / beige roofs and dark-green trees on the hills. DO NOT use any magenta or hot-pink inside the silhouette.',
   ].join('\n'),
   5: [
-    '- L5 is PRINT-ONLY: it is the backmost layer and will NOT be laser-cut. There is NO silhouette to trace and NO chroma-key background — every pixel is real printed content.',
-    '- Fill the ENTIRE canvas (inside the black outer frame) with the sky scene.',
+    '- L5 is PRINT-ONLY: it is the backmost layer and will NOT be laser-cut. There is NO silhouette to trace — every pixel INSIDE the black frame is real printed content.',
+    '- Fill the ENTIRE INTERIOR of the black frame with the sky scene (edge-to-edge to the INNER edge of the black frame on all four sides, no magenta left inside the frame).',
+    '- The outer magenta margin band OUTSIDE the black frame stays exactly as in the reference (pure #FF00FF). Post-processing will chroma-key that margin to transparent; you do NOT need to repaint the margin yourself. Do NOT paint on top of the black frame either.',
     '- SKY COLORING (IMPORTANT — avoid the "zebra-stripe" look): use a SMOOTH VERTICAL GRADIENT from one color near the top to another color near the horizon, OR at most 2 very softly blended color zones with feathered / blurred transitions. DO NOT paint hard horizontal color stripes. DO NOT split the sky into 3 or 4 clear bands. The result must read as ONE continuous dusk / dawn / night sky, not as stacked strips.',
     '- A large sun / moon disc is horizontally centered, positioned HIGH in the sky: the disc\'s BOTTOM edge is no lower than 35% from the top of the canvas (clearly above where L4\'s peaks end at ~45%, so the sun is never occluded by mountains). Disc diameter ≈ 20–28% of the canvas\'s shorter side. A soft glow / halo may blend outward into the surrounding sky color.',
-    '- A thin horizon silhouette fills ONLY the BOTTOM 18–22% of the canvas across the full width, touching the left, right, and bottom inner edges — this is part of the printed artwork, NOT a cut outline.',
+    '- A thin horizon silhouette fills ONLY the BOTTOM 18–22% of the canvas across the full width, touching the left, right, and bottom INNER frame edges — this is part of the printed artwork, NOT a cut outline.',
     '- Optional: a few small clouds / stars / birds ONLY in the top half of the canvas.',
-    '- ABSOLUTELY NO #FF00FF magenta anywhere on L5 — it is a print-only layer with no chroma-key.',
+    '- ABSOLUTELY NO #FF00FF magenta INSIDE the black frame — the interior is 100% real sky content. (Outer margin outside the frame is allowed to keep its reference magenta — that gets post-processed away.)',
   ].join('\n'),
 }
 
@@ -203,7 +209,7 @@ function extractGatewayError(data) {
 
 function isProviderUnavailableError(error) {
   const msg = String(error?.message || '')
-  return msg.includes('未找到可用提供商') || msg.includes('40003')
+  return msg.includes('No available provider') || msg.includes('未找到可用提供商') || msg.includes('40003')
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
@@ -243,16 +249,16 @@ async function post(path, body, timeoutMs = 90000) {
     })
   } catch (e) {
     if (e?.name === 'AbortError') {
-      throw new Error(`请求超时（>${Math.round(timeoutMs / 1000)}s）：${body?.model || 'unknown'}`)
+      throw new Error(`Request timed out (>${Math.round(timeoutMs / 1000)}s): ${body?.model || 'unknown'}`)
     }
-    throw new Error(`网络错误：${e.message}`)
+    throw new Error(`Network error: ${e.message}`)
   } finally {
     clearTimeout(timer)
   }
   if (!res.ok) {
     let detail = ''
     try { detail = await res.text() } catch (_) {}
-    throw new Error(`HTTP ${res.status}：${detail.slice(0, 400)}`)
+    throw new Error(`HTTP ${res.status}: ${detail.slice(0, 400)}`)
   }
   const data = await res.json()
   const businessError = extractGatewayError(data)
@@ -266,7 +272,7 @@ async function post(path, body, timeoutMs = 90000) {
  */
 export async function refineSculpturePrompt(userInput) {
   const input = String(userInput || '').trim()
-  if (!input) throw new Error('请输入提示词')
+  if (!input) throw new Error('Please enter a prompt')
 
   const errors = []
   for (const model of TEXT_MODEL_CANDIDATES) {
@@ -285,17 +291,17 @@ export async function refineSculpturePrompt(userInput) {
         data?.candidates?.[0]?.content?.parts?.[0]?.text ||
         data?.content?.[0]?.text ||
         ''
-      if (!content) { errors.push(`${model} 返回空`); continue }
+      if (!content) { errors.push(`${model} returned empty`); continue }
 
       const parsed = parseLayerResponse(content)
       if (parsed.length === 5) return { raw: content, layers: parsed }
-      errors.push(`${model} 解析不足 5 层（${parsed.length}）`)
+      errors.push(`${model} parsed fewer than 5 layers (${parsed.length})`)
     } catch (e) {
       errors.push(`${model}: ${e.message}`)
-      if (!isProviderUnavailableError(e)) throw new Error(`润色失败：${e.message}`)
+      if (!isProviderUnavailableError(e)) throw new Error(`Prompt refinement failed: ${e.message}`)
     }
   }
-  throw new Error(`润色失败：${errors.join('；')}`)
+  throw new Error(`Prompt refinement failed: ${errors.join('; ')}`)
 }
 
 function parseLayerResponse(text) {
@@ -365,6 +371,39 @@ function resolveExportSize(opts = {}, layers = []) {
  *   - the reference image fed to banana2 for every layer, AND
  *   - the pixel-perfect overlay stamped back on during post-processing.
  */
+/**
+ * Frame thickness as a fraction of the canvas's shorter side. The frame
+ * grows INWARD only — the outer edge always sits on the canvas boundary,
+ * so bumping this just moves the inner opening toward the centre. 16:9
+ * and 4:3 use a chunkier ratio so the final picture frame reads as a real
+ * physical frame; 1:1 keeps the historical 3.5%. Both banana2 reference
+ * frames and the exported frame SVG are driven from this single helper,
+ * so ratios always stay in sync.
+ */
+function frameThicknessRatio(aspectRatio) {
+  if (aspectRatio === '1:1') return 0.035
+  return 0.055
+}
+
+/**
+ * Distance (as a fraction of the canvas's shorter side) between the canvas
+ * boundary and the OUTER edge of the black picture frame — i.e. how much
+ * "breathing room" is reserved around the frame.
+ *
+ * Why it exists: banana2 / nano-banana generators visibly struggle when the
+ * frame runs flush with the canvas edge — they tend to cramp content against
+ * the border or interpret the very outermost pixels as generation anchors and
+ * paint subtle artefacts there. Giving the frame a small uniform margin lets
+ * the AI treat the margin band as "outside the scene", which in practice
+ * produces much cleaner silhouettes at the frame's inner edge.
+ *
+ * Physically, the margin just becomes extra plank material surrounding the
+ * black frame after laser cutting — a natural mat border around the picture.
+ */
+function frameMarginRatio() {
+  return 0.03
+}
+
 export function buildBlackFrameDataUrl(aspectRatio = '1:1', {
   longSide = 1024,
   strokePx,
@@ -381,11 +420,8 @@ export function buildBlackFrameDataUrl(aspectRatio = '1:1', {
     H = longSide
     W = Math.round(longSide * aw / ah)
   }
-  // Thick frame (~3.5% of the shorter side) — the thicker the frame, the
-  // more forcefully banana2 treats it as a hard boundary and the smaller the
-  // drawable area, which in turn leaves less room for the model to hide a
-  // white "passepartout" margin between its content and the frame.
-  const t = Math.max(8, Math.round(strokePx || Math.min(W, H) * 0.035))
+  const t = Math.max(8, Math.round(strokePx || Math.min(W, H) * frameThicknessRatio(aspectRatio)))
+  const m = Math.max(0, Math.round(Math.min(W, H) * frameMarginRatio(aspectRatio)))
   const canvas = document.createElement('canvas')
   canvas.width = W; canvas.height = H
   const ctx = canvas.getContext('2d')
@@ -398,14 +434,23 @@ export function buildBlackFrameDataUrl(aspectRatio = '1:1', {
     // (for L1–L4) or replace edge-to-edge (for L5 sky), and there is no
     // ambiguity about where the drawable area ends — it ends exactly at the
     // inner edge of the black frame.
+    //
+    // The chroma-key fills the *entire* canvas, including the outer margin
+    // band. The AI reference therefore reads as: margin (magenta) → frame
+    // (black ring) → interior (magenta). When the AI returns a layer and we
+    // chroma-key it, the margin band collapses to transparent alongside the
+    // interior background — exactly as intended, the plank keeps a clean
+    // transparent border around the frame.
     ctx.fillStyle = CHROMA_KEY_HEX
     ctx.fillRect(0, 0, W, H)
   }
+  // Frame rectangles are inset by `m` from every canvas edge so the black
+  // ring sits inside a uniform margin band. Thickness `t` is unchanged.
   ctx.fillStyle = '#000000'
-  ctx.fillRect(0, 0, W, t)
-  ctx.fillRect(0, H - t, W, t)
-  ctx.fillRect(0, 0, t, H)
-  ctx.fillRect(W - t, 0, t, H)
+  ctx.fillRect(m, m, W - 2 * m, t)
+  ctx.fillRect(m, H - m - t, W - 2 * m, t)
+  ctx.fillRect(m, m, t, H - 2 * m)
+  ctx.fillRect(W - m - t, m, t, H - 2 * m)
   return canvas.toDataURL('image/png')
 }
 
@@ -438,7 +483,7 @@ void blackFrameUrl
 export async function generateSculptureLayer(layerIndex, layerPrompt, frameDataUrl, {
   aspectRatio = '1:1',
 } = {}) {
-  if (!FAL_KEY) throw new Error('未配置 VITE_FAL_KEY')
+  if (!FAL_KEY) throw new Error('VITE_FAL_KEY is not configured')
   const budget = LAYER_OCCUPANCY_BUDGETS[layerIndex] || LAYER_OCCUPANCY_BUDGETS[1]
   const ratioWord = ({ '1:1': 'square', '16:9': 'widescreen 16:9 landscape', '4:3': '4:3 landscape' })[aspectRatio] || aspectRatio
   const stageContext = [
@@ -453,14 +498,14 @@ export async function generateSculptureLayer(layerIndex, layerPrompt, frameDataU
   const prompt = [
     `Generate Layer ${layerIndex} of a 5-layer UV-print + laser-cut layered-sculpture composition.`,
     '',
-    `CANVAS SHAPE: ${ratioWord} (aspect ratio ${aspectRatio}). The reference image shows exactly what the output canvas looks like: a THICK solid BLACK rectangular outer frame occupying roughly the outer 3.5% of the shorter side on each side (a very visible, heavy border), and the ENTIRE interior of that frame is flood-filled with PURE MAGENTA #FF00FF (edge-to-edge, touching the inner edge of the black frame with NO margin of any kind, NO white gap, NO padding). Treat the inner edge of that thick black frame as a hard physical wall — your drawable area ENDS there.`,
+    `CANVAS SHAPE: ${ratioWord} (aspect ratio ${aspectRatio}). The reference image is organised as THREE concentric zones from outside to inside: (a) an OUTER MAGENTA MARGIN BAND of pure #FF00FF, roughly 3% of the shorter side wide, running along every canvas edge; (b) a THICK solid BLACK rectangular picture frame inset inside that margin — thickness ≈ 3.5% of the shorter side for 1:1 panels, ≈ 5.5% for 16:9 / 4:3 — a heavy visible band (NOT a hairline); (c) an INTERIOR drawable area inside the black frame, flood-filled with pure magenta #FF00FF. Your drawable area is STRICTLY that INNER rectangle, inside the black frame. Treat the inner edge of the black frame as a hard physical wall on all four sides — your content ENDS there. The BLACK FRAME itself and the OUTER MAGENTA MARGIN BAND (outside the black frame) are structural constants — DO NOT paint on top of them, DO NOT extend your content across them, DO NOT thicken / thin / move / remove the frame, DO NOT fill the outer margin band with new content.`,
     '',
     'REFERENCE PRESERVATION (non-negotiable):',
-    '- The output MUST keep the THICK black outer frame EXACTLY as in the reference — same thickness, same position, full-bleed to the canvas edges. Do NOT draw a thinner frame, do NOT inset it, do NOT add any additional inner or outer border.',
+    '- The output MUST keep BOTH the OUTER MAGENTA MARGIN BAND AND the THICK BLACK picture frame EXACTLY as in the reference — same thicknesses, same positions, same inset from the canvas edges. Do NOT draw a thinner frame, do NOT shift the frame, do NOT add any additional inner or outer decorative border, do NOT paint anything into the outer magenta margin band, do NOT paint over the black frame.',
     layerIndex === 5
-      ? '- REPLACE all the magenta interior with your real sky content. Your sky / horizon painting must extend FULLY to the inner edge of the black frame on all four sides — there is NO white or unpainted margin between your sky and the frame. Do NOT shrink the content into a smaller rectangle inside the frame. Do NOT leave ANY magenta pixels in the output — repaint every one of them with real sky.'
-      : '- The magenta interior in the reference is the CHROMA-KEY background; preserve it AS-IS and paint your silhouette content ON TOP of it. Do NOT convert magenta to white. Do NOT shrink the drawable area inward, leaving a white ring between the frame and the magenta — that ring is WRONG. Magenta must still touch the inner edge of the black frame on all four sides wherever your silhouette does not cover it.',
-    '- NEVER introduce any white / off-white / light-gray margin, padding, inner border, mat, or passepartout between the black outer frame and the interior content. If you find yourself "centering" content with breathing room around it, STOP — the content fills the frame edge-to-edge.',
+      ? '- REPLACE all the magenta INTERIOR (the area INSIDE the black frame) with your real sky content. Your sky / horizon painting must extend FULLY to the INNER edge of the black frame on all four sides — NO white / unpainted gap between your sky and the inner frame edge. Do NOT shrink the content into a smaller rectangle inside the frame. Do NOT paint over the black frame itself — the black frame ring must remain visible and intact. The OUTER MAGENTA MARGIN BAND (outside the black frame, along the canvas edges) stays pure #FF00FF exactly as in the reference — you do NOT need to repaint it, post-processing will chroma-key that margin to transparent later. Inside the black frame, leave NO magenta pixels — every interior pixel becomes real sky.'
+      : '- The magenta INTERIOR in the reference (the area INSIDE the black frame) is the CHROMA-KEY background; preserve it AS-IS and paint your silhouette content ON TOP of it. Do NOT convert magenta to white. Do NOT shrink the drawable area inward, leaving a white ring between the frame and the magenta — that ring is WRONG. Magenta must still touch the INNER edge of the black frame on all four sides wherever your silhouette does not cover it. The OUTER MAGENTA MARGIN BAND (outside the black frame, along the canvas edges) must also stay pure #FF00FF exactly as in the reference — do NOT paint silhouette content, ground, horizon, hero, foliage, or any other illustration pixel into that outer margin band. Your silhouette lives STRICTLY inside the black frame.',
+    '- NEVER introduce any white / off-white / light-gray margin, padding, inner border, mat, or passepartout BETWEEN the inner edge of the black frame and your silhouette content. If a rule says your silhouette touches an inner frame edge, it must touch WITHOUT any light-colored gap. (Important: the OUTER magenta margin band in the reference — outside the black frame — IS supposed to be there. It is part of the chroma-key structure, not a mistake. Preserve it as-is; this rule forbids an INSIDE-the-frame white ring, not the outer magenta band.)',
     '',
     stageContext,
     '',
@@ -481,7 +526,8 @@ export async function generateSculptureLayer(layerIndex, layerPrompt, frameDataU
       : '- ABSOLUTELY NO WHITE OUTLINE / WHITE STROKE / WHITE RIM around the silhouette. Do NOT add a white border, white glow, white highlight ring, rim-light, cartoon outline stroke, or any light-colored decorative edge between the colored silhouette and the magenta background. The interior silhouette color must sit DIRECTLY against pure magenta #FF00FF with no intermediate outline of any kind. If your illustration style instinct is to add a white stroke for readability, DO NOT do it here — the layer is a laser-cut silhouette and the white stroke will create unwanted cut paths and visible halos.',
     '',
     'ABSOLUTE RULES:',
-    '1) STAY STRICTLY WITHIN THE OCCUPANCY BUDGET ABOVE. If your drawing extends outside the allowed region, it will hide the layers behind and ruin the stacked sculpture. Visualize the bounding rectangle first, then compose inside it.',
+    '0) STAY STRICTLY INSIDE THE BLACK FRAME. Your silhouette / sky content lives ONLY inside the inner rectangle of the black frame. The BLACK FRAME RING and the OUTER MAGENTA MARGIN BAND (outside the frame, along the canvas edges) are fixed structural zones that must survive into the output unchanged. Never paint a pixel on top of the black frame. Never paint a pixel in the outer magenta margin band. Never let your content spill past the inner edge of the black frame. (Post-processing chroma-keys the outer magenta margin to transparent for every layer — L5 included — so you never need to repaint the margin yourself.)',
+    '1) STAY STRICTLY WITHIN THE OCCUPANCY BUDGET ABOVE. If your drawing extends outside the allowed region, it will hide the layers behind and ruin the stacked sculpture. Visualize the bounding rectangle first, then compose inside it. All of the percentage-based occupancy budgets above are measured against the FULL canvas, but your silhouette must also stay inside the black frame — if a budget would push a pixel outside the inner frame rectangle, clip to the inner frame edge instead.',
     layerIndex === 3
       ? '1a) HERO-SIZE WARNING: On Layer 3 the hero MUST be drawn as a SMALL figurine — width ≤ 38% of canvas width, height ≤ 32% of canvas height. It is NEVER a close-up, NEVER a portrait, NEVER fills the canvas. The top 44% of the canvas and the left/right 31% of width around the hero stay pure magenta.'
       : null,
@@ -513,15 +559,15 @@ export async function generateSculptureLayer(layerIndex, layerPrompt, frameDataU
           logs: false,
         }),
         300000,
-        'banana2 超时（>300s）',
+        'banana2 timed out (>300s)',
       )
       const url = result?.data?.images?.[0]?.url
-      if (!url) throw new Error('banana2 返回无图')
+      if (!url) throw new Error('banana2 returned no image')
       return url
     } catch (e) {
       const retriable = isTransientFetchError(e)
       const isLast = attempt >= maxAttempts
-      if (!retriable || isLast) throw new Error(`Layer ${layerIndex} 生成失败：${e.message}`)
+      if (!retriable || isLast) throw new Error(`Layer ${layerIndex} generation failed: ${e.message}`)
       await sleep(800 * attempt)
     }
   }
@@ -557,7 +603,7 @@ export const CHROMA_KEY_HEX = '#FF00FF'
  * with a tolerance wide enough to catch anti-aliased edge pixels that
  * blended the key color with neighbouring content.
  */
-export async function composeWithFixedFrame(rawImageSource, frameDataUrl, { layerId } = {}) {
+export async function composeWithFixedFrame(rawImageSource, frameDataUrl, { layerId, aspectRatio = '1:1' } = {}) {
   const [rawDataUrl, frameSrc] = await Promise.all([
     toDataUrl(rawImageSource),
     toDataUrl(frameDataUrl),
@@ -624,19 +670,47 @@ export async function composeWithFixedFrame(rawImageSource, frameDataUrl, { laye
     px[i] = r; px[i + 1] = g; px[i + 2] = b; px[i + 3] = 255
   }
 
-  // ────── FRAME-MARGIN CLEANUP (all layers) ──────
+  // ────── OUTER MARGIN BAND → TRANSPARENT (all layers, including L5) ──────
+  // The AI-reference frame image sits inside a fixed-width outer magenta
+  // margin band (see `frameMarginRatio` / `buildBlackFrameDataUrl`). The
+  // band exists only to give the model breathing room during generation; the
+  // physical plank does NOT want that magenta to ship. So we force every
+  // non-frame pixel inside the outer margin band to alpha=0 here — regardless
+  // of whether the AI kept it magenta, painted sky into it (L5), or produced
+  // any other color. This is a simple location-based mask and runs BEFORE
+  // the flood-fill passepartout cleanup below so those later passes never
+  // have to worry about the outer margin.
+  const marginPx = Math.max(
+    0,
+    Math.round(Math.min(W, H) * frameMarginRatio(aspectRatio)),
+  )
+  if (marginPx > 0) {
+    for (let y = 0; y < H; y += 1) {
+      const inMarginRow = y < marginPx || y >= H - marginPx
+      for (let x = 0; x < W; x += 1) {
+        const p = y * W + x
+        if (isFrame[p]) continue
+        const inMarginCol = x < marginPx || x >= W - marginPx
+        if (!inMarginRow && !inMarginCol) continue
+        const i = p * 4
+        px[i] = 255; px[i + 1] = 255; px[i + 2] = 255; px[i + 3] = 0
+      }
+    }
+  }
+
+  // ────── INTERIOR PASSEPARTOUT CLEANUP (all layers) ──────
   // banana2 sometimes paints a thin "passepartout" ring of near-white (and,
-  // on L5, residual magenta) between the outer black frame and the real
-  // content, even though the reference image has the interior filled edge-
-  // to-edge with magenta. Detect that ring by BFS-flood-filling inward from
-  // any frame-adjacent pixel through connected near-white / near-magenta
-  // opaque pixels. Interior white elements (clouds, eyes, petals) are NOT
-  // connected to the frame through near-white, so they are safe.
+  // on L5, residual magenta) along the INNER edge of the black frame, even
+  // though the reference has the interior filled edge-to-edge with magenta.
+  // Detect that ring by BFS-flood-filling inward from any frame-adjacent
+  // pixel through connected near-white / near-magenta opaque pixels. Interior
+  // elements (clouds, eyes, petals) are NOT connected to the frame through
+  // near-white, so they are safe.
   //
-  //   L1–L4: margin pixels get alpha=0 (they should have been the chroma-key
+  //   L1–L4: ring pixels get alpha=0 (they should have been the chroma-key
   //          background anyway).
-  //   L5    : margin pixels are repainted with the color of the nearest
-  //          real content pixel, so the sky extends edge-to-edge.
+  //   L5    : ring pixels are repainted with the color of the nearest
+  //          real sky pixel so the sky extends edge-to-edge inside the frame.
   const isMarginColor = (i) => {
     const r = px[i], g = px[i + 1], b = px[i + 2]
     if (r >= 230 && g >= 230 && b >= 230) return true
@@ -777,12 +851,12 @@ async function toDataUrl(src) {
   if (!src) throw new Error('empty image source')
   if (String(src).startsWith('data:')) return src
   const res = await fetch(src)
-  if (!res.ok) throw new Error(`下载图片失败：HTTP ${res.status}`)
+  if (!res.ok) throw new Error(`Image download failed: HTTP ${res.status}`)
   const blob = await res.blob()
   return await new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload  = () => resolve(reader.result)
-    reader.onerror = () => reject(new Error('读取图片失败'))
+    reader.onerror = () => reject(new Error('Failed to read image'))
     reader.readAsDataURL(blob)
   })
 }
@@ -792,7 +866,7 @@ function loadImage(src) {
     const el = new Image()
     el.crossOrigin = 'anonymous'
     el.onload = () => resolve(el)
-    el.onerror = () => reject(new Error('加载图片失败'))
+    el.onerror = () => reject(new Error('Failed to load image'))
     el.src = src
   })
 }
@@ -847,6 +921,7 @@ export async function vectorizeImage(imageSource, {
   pathomit = 4,
   ltres = 0.5,
   qtres = 0.5,
+  aspectRatio = '1:1',
 } = {}) {
   const dataUrl = await toDataUrl(imageSource)
   const img = await loadImage(dataUrl)
@@ -882,10 +957,15 @@ export async function vectorizeImage(imageSource, {
   // to be laser-cut. If we left it in, ImageTracer would add an extra outer
   // rectangle to every layer's cut path.
   //
-  // We only touch pixels within a thin edge band (≈1.8 % of the short side
-  // plus a small safety margin) so pure-black illustration details in the
-  // middle of the canvas are preserved untouched.
-  const frameZone = Math.max(6, Math.round(Math.min(W, H) * 0.018))
+  // We only touch pixels within an edge band. The band must cover the FULL
+  // depth from the canvas edge to the INNER edge of the black frame, i.e.
+  // outer margin (`frameMarginRatio`) + frame thickness (`frameThicknessRatio`)
+  // plus a small safety margin. Otherwise the inner edge of the frame
+  // survives this pass and ImageTracer turns it into an extra inner
+  // rectangle next to the silhouette cut.
+  const frameBandRatio =
+    frameMarginRatio(aspectRatio) + frameThicknessRatio(aspectRatio) + 0.012
+  const frameZone = Math.max(6, Math.round(Math.min(W, H) * frameBandRatio))
   for (let y = 0; y < H; y += 1) {
     const inBorderRow = y < frameZone || y >= H - frameZone
     for (let x = 0; x < W; x += 1) {
@@ -957,17 +1037,20 @@ export async function vectorizeImage(imageSource, {
  *   2. Uses the alpha channel directly with NO erosion / NO smoothing, so
  *      the cut hugs the silhouette pixel-for-pixel (the previous pipeline
  *      eroded by 1px which made the cut visibly inset from the bitmap).
- *   3. The canonical outer black frame is stripped from the silhouette
- *      trace (otherwise imagetracer would emit a fat, messy poly-rectangle
- *      around every layer) and re-added as ONE explicit `<rect>` cut that
- *      follows the OUTER edge of the frame at the canvas perimeter. This
- *      gives every layer a clean rectangular perimeter cut AND preserves
- *      the interior silhouette cuts.
+ *   3. Silhouette pixels AND the canonical outer black frame are treated
+ *      as one merged "keep" solid. The tracer then emits paths only for
+ *      the BACKGROUND HOLES (transparent regions surrounded by keep) —
+ *      i.e. the sky / empty areas that must be routed AWAY on the laser
+ *      cutter. Because the frame is preserved in the mask, the silhouette
+ *      never gets traced as a standalone closed shape: it stays
+ *      physically fused with the picture frame on every edge it touches.
+ *      The outer canvas perimeter is emitted as an explicit `<rect>`
+ *      separately so the cutter can still release the plank from stock.
  *   4. Parses the imagetracer output via DOMParser instead of regex, so
- *      silhouette paths are reliably kept and white background paths are
- *      reliably dropped — independent of how imagetracer happens to
- *      stringify (`<path/>` vs `<path></path>`, `rgb(255,255,255)` vs
- *      `#ffffff`, etc.).
+ *      hole paths are reliably kept and the merged-solid path is reliably
+ *      dropped — independent of how imagetracer happens to stringify
+ *      (`<path/>` vs `<path></path>`, `rgb(255,255,255)` vs `#ffffff`,
+ *      etc.).
  *
  * @param {string|Image} imageSource  PNG data URL or HTMLImageElement
  * @param {object} [opts]
@@ -986,6 +1069,11 @@ export async function extractCutPathInner(imageSource, {
   pathomit = 8,
   ltres = 1.0,
   qtres = 1.0,
+  // Used to look up the outer-margin thickness (= `frameMarginRatio` ×
+  // shorter side). The margin band sits between the canvas edge and the
+  // outer edge of the black frame and is treated as "keep" material during
+  // cut tracing, so it never gets routed away as a hole.
+  aspectRatio = '1:1',
 } = {}) {
   const dataUrl = await toDataUrl(imageSource)
   const img = await loadImage(dataUrl)
@@ -1002,20 +1090,35 @@ export async function extractCutPathInner(imageSource, {
   const data = ctx.getImageData(0, 0, W, H)
   const px = data.data
 
-  const frameZone = Math.max(6, Math.round(Math.min(W, H) * 0.018))
+  // NEW BEHAVIOUR (fuse-with-frame cut):
+  // We want each layer's cut path to carve AWAY the background holes only,
+  // so the silhouette stays physically attached to the picture frame. So we
+  // treat both silhouette pixels AND the canonical black frame as a single
+  // merged "keep" region (black ink), and the transparent background (sky /
+  // outside-the-subject area) as "cut away" (white). The tracer then emits
+  // paths for each white blob = exactly the holes that need to be routed
+  // out of the plank. The silhouette's own contour is no longer cut as a
+  // closed shape, which is what was producing the unwanted inner rectangle.
+  //
+  // The outer margin band (the transparent strip between the canvas edge and
+  // the outer edge of the black frame) is also treated as "keep" — it is
+  // part of the physical plank, not a hole to route out. Without this the
+  // tracer would cut a ring around the frame and detach the margin from the
+  // plank, which the user explicitly doesn't want.
   const TRACE_BLACK = { r: 0, g: 0, b: 0 }
   const TRACE_WHITE = { r: 255, g: 255, b: 255 }
+  const marginPx = Math.max(
+    0,
+    Math.round(Math.min(W, H) * frameMarginRatio(aspectRatio)),
+  )
 
   for (let y = 0; y < H; y += 1) {
-    const inBorderRow = y < frameZone || y >= H - frameZone
+    const inMarginRow = y < marginPx || y >= H - marginPx
     for (let x = 0; x < W; x += 1) {
       const p = (y * W + x) * 4
-      const a = px[p + 3]
-      const inBorderCol = x < frameZone || x >= W - frameZone
-      let isInk = a >= 128
-      if (isInk && (inBorderRow || inBorderCol)) {
-        if (px[p] <= 12 && px[p + 1] <= 12 && px[p + 2] <= 12) isInk = false
-      }
+      const inMarginCol = x < marginPx || x >= W - marginPx
+      const inMarginBand = inMarginRow || inMarginCol
+      const isInk = px[p + 3] >= 128 || inMarginBand
       const c = isInk ? TRACE_BLACK : TRACE_WHITE
       px[p] = c.r; px[p + 1] = c.g; px[p + 2] = c.b; px[p + 3] = 255
     }
@@ -1045,12 +1148,15 @@ export async function extractCutPathInner(imageSource, {
   )
 
   const { inner, viewBox } = splitSvg(svgstr)
-  const silhouettePaths = filterSilhouettePaths(inner, cutColor, strokeWidth)
+  // Keep the WHITE-filled paths (the background holes that must be routed
+  // out of the plank), drop the BLACK ones (the frame+silhouette solid —
+  // we only need the canvas-edge rect below to release the whole plank).
+  const holePaths = filterHolePaths(inner, cutColor, strokeWidth, { W, H })
 
   // Every fabrication layer needs an outer-perimeter cut or the laser
   // cutter never actually releases the piece from the stock. We emit a
   // single <rect> that traces the canvas edge (= outer edge of the
-  // canonical black frame), plus the interior silhouette cuts.
+  // canonical black frame), plus the interior hole cuts.
   const inset = strokeWidth / 2
   const rectX = inset
   const rectY = inset
@@ -1061,8 +1167,8 @@ export async function extractCutPathInner(imageSource, {
     `fill="none" stroke="${cutColor}" stroke-width="${strokeWidth}" ` +
     `stroke-linejoin="miter"/>`
 
-  const combined = silhouettePaths
-    ? `${frameRect}\n      ${silhouettePaths}`
+  const combined = holePaths
+    ? `${frameRect}\n      ${holePaths}`
     : frameRect
 
   return { inner: combined, viewBox: viewBox || `0 0 ${W} ${H}`, W, H }
@@ -1100,6 +1206,71 @@ function filterSilhouettePaths(inner, cutColor, strokeWidth) {
       `<path d="${xmlAttr(d)}" fill="none" stroke="${cutColor}" ` +
       `stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round"/>`
     )
+  }
+  return out.join('\n      ')
+}
+
+/**
+ * Sibling of `filterSilhouettePaths` that does the OPPOSITE: keep only the
+ * WHITE-filled paths (i.e. the holes in the merged silhouette+frame solid)
+ * and emit them as stroke-only cuts. Used by `extractCutPathInner` so the
+ * exported cut lines route AWAY the background while the silhouette stays
+ * physically attached to the picture frame.
+ *
+ * Also drops any hole path whose bounding box is essentially the whole
+ * canvas — belt-and-braces safety so we never double up with the outer
+ * canvas-edge rect emitted by the caller.
+ */
+function filterHolePaths(inner, cutColor, strokeWidth, { W, H } = {}) {
+  if (!inner) return ''
+  const wrap = (d) =>
+    `<path d="${xmlAttr(d)}" fill="none" stroke="${cutColor}" ` +
+    `stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round"/>`
+
+  const looksLikeCanvas = (d) => {
+    if (!W || !H) return false
+    const nums = (d.match(/-?\d+(?:\.\d+)?/g) || []).map(Number)
+    if (!nums.length) return false
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+    for (let i = 0; i + 1 < nums.length; i += 2) {
+      const x = nums[i]
+      const y = nums[i + 1]
+      if (x < minX) minX = x
+      if (x > maxX) maxX = x
+      if (y < minY) minY = y
+      if (y > maxY) maxY = y
+    }
+    if (!isFinite(minX)) return false
+    const bw = maxX - minX
+    const bh = maxY - minY
+    return bw >= W * 0.98 && bh >= H * 0.98
+  }
+
+  if (typeof DOMParser === 'undefined') {
+    const out = []
+    inner.replace(/<path\b[^>]*\/?>(?:<\/path>)?/gi, (m) => {
+      if (!/fill=("|')(?:none|white|#fff(?:fff)?|rgb\(\s*255\s*,\s*255\s*,\s*255\s*\))\1/i.test(m)) return ''
+      const dMatch = m.match(/\bd=("([^"]*)"|'([^']*)')/i)
+      const d = dMatch ? (dMatch[2] || dMatch[3]) : ''
+      if (!d) return ''
+      if (looksLikeCanvas(d)) return ''
+      out.push(wrap(d))
+      return ''
+    })
+    return out.join('\n      ')
+  }
+
+  const wrapped = `<svg xmlns="http://www.w3.org/2000/svg">${inner}</svg>`
+  const doc = new DOMParser().parseFromString(wrapped, 'image/svg+xml')
+  const paths = Array.from(doc.querySelectorAll('path'))
+  const out = []
+  for (const node of paths) {
+    const d = node.getAttribute('d')
+    if (!d) continue
+    const fill = (node.getAttribute('fill') || '').trim().toLowerCase()
+    if (!isWhiteFill(fill)) continue
+    if (looksLikeCanvas(d)) continue
+    out.push(wrap(d))
   }
   return out.join('\n      ')
 }
@@ -1310,7 +1481,7 @@ export function resolveLayerColor(layer) {
  * original SVG is returned unchanged.
  */
 export function buildColoredLayerSvg(layer, { color, targetSize = 1024 } = {}) {
-  if (!layer?.svg) throw new Error('该图层尚未生成矢量')
+  if (!layer?.svg) throw new Error('This layer has not been vectorized yet')
   const finalColor = color || resolveLayerColor(layer)
   const { inner, viewBox } = splitSvg(layer.svg)
   const recolored = recolorSvgContent(inner, finalColor)
@@ -1345,7 +1516,7 @@ export function buildGroupedSvg(layers, opts = {}) {
   const normalized = (typeof opts === 'number' ? { targetSize: opts } : opts) || {}
   const { W, H } = resolveExportSize(normalized, layers)
   const usable = (layers || []).filter(l => l && typeof l.svg === 'string' && l.svg.trim())
-  if (!usable.length) throw new Error('没有可导出的矢量图层')
+  if (!usable.length) throw new Error('No vector layers available to export')
 
   const ordered = [...usable].sort((a, b) => b.id - a.id)
 
@@ -1419,18 +1590,16 @@ function xmlAttr(s) {
  */
 export async function buildUvCutSvg(layer, opts = {}) {
   const { cutStroke = '#ff0000', cutStrokeWidth = 0.5, aspectRatio = '1:1' } = opts
-  if (!layer) throw new Error('图层为空')
-  if (!layer.imageDataUrl) throw new Error('该图层没有彩色位图')
+  if (!layer) throw new Error('Layer is empty')
+  if (!layer.imageDataUrl) throw new Error('This layer has no color bitmap')
 
   const { W, H } = resolveExportSize(opts, [])
   const isPrintOnly = layer.id === 5
   const label = `Layer ${layer.id}${layer.zh ? ' - ' + layer.zh : ''}`
-  // Subtract the canonical black frame from the bitmap so the UV print layer
-  // does NOT double-burn the frame that the cut group already vectorizes as
-  // <rect>. L5 (background) keeps its frame baked in because it has no cut.
-  const printBitmap = isPrintOnly
-    ? layer.imageDataUrl
-    : await stripFrameFromBitmap(layer.imageDataUrl, aspectRatio)
+  // Always subtract the canonical black frame from the bitmap so the UV
+  // print never double-burns the frame — the outer picture frame is now
+  // exported as its own standalone SVG file alongside the 5 layers.
+  const printBitmap = await stripFrameFromBitmap(layer.imageDataUrl, aspectRatio)
   const printBlock = [
     `  <g id="print" inkscape:label="Print" inkscape:groupmode="layer" data-role="print">`,
     `    <image x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="none" xlink:href="${xmlAttr(printBitmap)}" href="${xmlAttr(printBitmap)}"/>`,
@@ -1438,12 +1607,18 @@ export async function buildUvCutSvg(layer, opts = {}) {
   ].join('\n')
 
   if (isPrintOnly) {
+    // L5 is the backmost board — no silhouette inside, but the laser still
+    // needs to cut the board itself out of the stock, so we emit a cut
+    // group with a single rectangle tracing the outer canvas edge.
     return [
       '<?xml version="1.0" encoding="UTF-8" standalone="no"?>',
       `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" version="1.1" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`,
-      `  <title>${xmlAttr(label)} — UV print only</title>`,
-      `  <desc>Layer 5 is the backmost print-only layer — UV bitmap without a cut outline.</desc>`,
+      `  <title>${xmlAttr(label)} — UV print + Cut (outer board)</title>`,
+      `  <desc>Layer 5 backmost board: UV print plus a single rectangular cut outline along the canvas edge so the board can be cut out of the stock.</desc>`,
       printBlock,
+      `  <g id="cut" inkscape:label="Cut" inkscape:groupmode="layer" data-role="cut" fill="none" stroke="${cutStroke}" stroke-width="${cutStrokeWidth}">`,
+      `    <rect x="0" y="0" width="${W}" height="${H}"/>`,
+      `  </g>`,
       '</svg>',
     ].join('\n')
   }
@@ -1451,7 +1626,7 @@ export async function buildUvCutSvg(layer, opts = {}) {
   const cutColor = layer.colorOverride || cutStroke
   const { inner: cutInner, viewBox, W: vW, H: vH } = await extractCutPathInner(
     layer.imageDataUrl,
-    { cutColor, strokeWidth: cutStrokeWidth },
+    { cutColor, strokeWidth: cutStrokeWidth, aspectRatio },
   )
   const [vx, vy, vw, vh] = (viewBox || `0 0 ${vW} ${vH}`).split(/\s+/).map(Number)
   const sx = W / (vw || W)
@@ -1477,6 +1652,48 @@ export async function buildUvCutSvg(layer, opts = {}) {
 }
 
 /**
+ * Build a standalone SVG containing ONLY the outer picture-frame geometry
+ * — no layer content, no chroma-key, no bitmap. Four solid black rectangles
+ * form the frame body (paint / UV print), plus a red hairline <g id="cut">
+ * with two rectangles (outer canvas edge + inner opening) for the laser
+ * cutter to route the frame as a ring-shaped part.
+ *
+ * Geometry mirrors `buildBlackFrameDataUrl` so the exported frame lines up
+ * pixel-for-pixel with the frame the AI was forced to respect.
+ */
+export function buildFrameOnlySvg({
+  aspectRatio = '1:1',
+  longSide = 1024,
+  cutStroke = '#ff0000',
+  cutStrokeWidth = 0.5,
+} = {}) {
+  const { W, H } = getCanvasSize(aspectRatio, longSide)
+  const t = Math.max(8, Math.round(Math.min(W, H) * frameThicknessRatio(aspectRatio)))
+  const m = Math.max(0, Math.round(Math.min(W, H) * frameMarginRatio(aspectRatio)))
+  const innerX = m + t
+  const innerY = m + t
+  const innerW = W - 2 * (m + t)
+  const innerH = H - 2 * (m + t)
+  return [
+    '<?xml version="1.0" encoding="UTF-8" standalone="no"?>',
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" version="1.1" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`,
+    `  <title>Picture frame outer frame</title>`,
+    `  <desc>Outer picture frame only — black ring (inset by a margin from the canvas edge so the AI generator has breathing room) + laser-cut outlines (outer canvas edge and inner opening).</desc>`,
+    `  <g id="print" inkscape:label="Print" inkscape:groupmode="layer" data-role="print">`,
+    `    <rect x="${m}" y="${m}" width="${W - 2 * m}" height="${t}" fill="#000000"/>`,
+    `    <rect x="${m}" y="${H - m - t}" width="${W - 2 * m}" height="${t}" fill="#000000"/>`,
+    `    <rect x="${m}" y="${m}" width="${t}" height="${H - 2 * m}" fill="#000000"/>`,
+    `    <rect x="${W - m - t}" y="${m}" width="${t}" height="${H - 2 * m}" fill="#000000"/>`,
+    `  </g>`,
+    `  <g id="cut" inkscape:label="Cut" inkscape:groupmode="layer" data-role="cut" fill="none" stroke="${cutStroke}" stroke-width="${cutStrokeWidth}">`,
+    `    <rect x="0" y="0" width="${W}" height="${H}"/>`,
+    `    <rect x="${innerX}" y="${innerY}" width="${innerW}" height="${innerH}"/>`,
+    `  </g>`,
+    '</svg>',
+  ].join('\n')
+}
+
+/**
  * Same idea as `buildGroupedSvg` but each of the 5 layers contains BOTH
  * a <g id="layer-N-print"> with the UV bitmap and a <g id="layer-N-cut">
  * with the laser-cut path. Rendered back-to-front (L5 first, L1 last).
@@ -1486,7 +1703,7 @@ export async function buildUvCutGroupedSvg(layers, opts = {}) {
   // Need a bitmap for every layer; cut paths are extracted fresh from each
   // bitmap below — no dependency on cached `layer.svg`.
   const usable = (layers || []).filter(l => l && l.imageDataUrl)
-  if (!usable.length) throw new Error('没有可导出的彩色位图图层')
+  if (!usable.length) throw new Error('No color bitmap layers available to export')
 
   const { W, H } = resolveExportSize(opts, usable)
 
@@ -1494,12 +1711,10 @@ export async function buildUvCutGroupedSvg(layers, opts = {}) {
 
   const blocks = await Promise.all(ordered.map(async (layer) => {
     const label = `Layer ${layer.id}${layer.zh ? ' - ' + layer.zh : ''}`
-    // See buildUvCutSvg: strip the frame out of the print bitmap for every
-    // layer that also emits a <rect> cut, so the frame is vectorized once
-    // and never printed twice. L5 keeps its frame baked in.
-    const printBitmap = layer.id === 5
-      ? layer.imageDataUrl
-      : await stripFrameFromBitmap(layer.imageDataUrl, aspectRatio)
+    // Always strip the frame from every print bitmap — the outer picture
+    // frame is now exported as its own standalone SVG, so no layer should
+    // still carry the frame pixels baked in.
+    const printBitmap = await stripFrameFromBitmap(layer.imageDataUrl, aspectRatio)
     const printBlock = [
       `    <g id="layer-${layer.id}-print" inkscape:label="${xmlAttr(label)} · Print" inkscape:groupmode="layer" data-role="print">`,
       `      <image x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="none" xlink:href="${xmlAttr(printBitmap)}" href="${xmlAttr(printBitmap)}"/>`,
@@ -1507,9 +1722,14 @@ export async function buildUvCutGroupedSvg(layers, opts = {}) {
     ].join('\n')
 
     if (layer.id === 5) {
+      // L5 backmost board: print + a single outer-rectangle cut so the
+      // board itself can be cut out of the stock.
       return [
-        `  <g id="layer-${layer.id}" inkscape:label="${xmlAttr(label)}" inkscape:groupmode="layer" data-layer-id="${layer.id}" data-print-only="true">`,
+        `  <g id="layer-${layer.id}" inkscape:label="${xmlAttr(label)}" inkscape:groupmode="layer" data-layer-id="${layer.id}">`,
         printBlock,
+        `    <g id="layer-${layer.id}-cut" inkscape:label="${xmlAttr(label)} · Cut" inkscape:groupmode="layer" data-role="cut" fill="none" stroke="${cutStroke}" stroke-width="${cutStrokeWidth}">`,
+        `      <rect x="0" y="0" width="${W}" height="${H}"/>`,
+        `    </g>`,
         `  </g>`,
       ].join('\n')
     }
@@ -1517,7 +1737,7 @@ export async function buildUvCutGroupedSvg(layers, opts = {}) {
     const cutColor = layer.colorOverride || cutStroke
     const { inner: cutInner, viewBox, W: vW, H: vH } = await extractCutPathInner(
       layer.imageDataUrl,
-      { cutColor, strokeWidth: cutStrokeWidth },
+      { cutColor, strokeWidth: cutStrokeWidth, aspectRatio },
     )
     const [vx, vy, vw, vh] = (viewBox || `0 0 ${vW} ${vH}`).split(/\s+/).map(Number)
     const sx = W / (vw || W)

@@ -11,14 +11,17 @@ const chatCompletionsProxy = {
   rewrite: () => '/v1/chat/completions',
 }
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [vue()],
   base: './',
   server: {
     port: 5176,
     strictPort: true,
+    watch: {
+      usePolling: true,
+      interval: 300,
+    },
     proxy: {
-      // 与生产环境同源路径一致，由本地转发到网关（避免浏览器 CORS）
       '/api/chat-completions': chatCompletionsProxy,
     },
   },
@@ -29,8 +32,13 @@ export default defineConfig({
   },
   build: {
     outDir: path.resolve(__dirname, './dist'),
-    emptyOutDir: true,
+    emptyOutDir: false,
     rollupOptions: {
+      input: {
+        index: path.resolve(__dirname, 'index.html'),
+        app: path.resolve(__dirname, 'app.html'),
+        embed: path.resolve(__dirname, 'embed.html'),
+      },
       output: {
         entryFileNames: 'assets/index.[hash].js',
         chunkFileNames: 'assets/[name].[hash].js',
@@ -38,4 +46,4 @@ export default defineConfig({
       },
     },
   },
-})
+}))
